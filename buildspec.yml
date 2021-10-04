@@ -1,0 +1,28 @@
+version: 0.2
+run-as: aws-yocto-builder
+env:
+  git-credential-helper: yes
+phases:
+  pre_build:
+    run-as: root
+    commands:
+      - mkdir -p /build-output
+      - chown aws-yocto-builder:aws-yocto-builder /build-output
+      - chown aws-yocto-builder:aws-yocto-builder /downloads
+      - chown aws-yocto-builder:aws-yocto-builder /sstate-cache
+      - chmod 777 /build-output
+      - chmod 777 /downloads
+      - chmod 777 /sstate-cache
+      - git config --global user.name "Cloudy Builder"
+      - git config --global user.email "email@example.com"
+  build:
+    commands:
+      - git clone git://arago-project.org/git/projects/oe-layersetup.git $HOME/tisdk
+      - cd $HOME/tisdk
+      - ./oe-layertool-setup.sh -f configs/arago-dunfell-config.txt
+      - cd build
+      - . conf/setenv
+      - TOOLCHAIN_PATH=$HOME/gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu MACHINE=am335x-evm bitbake core-image-minimal
+artifacts:
+  s3-prefix: images
+  files: $BUILDDIR/deploy/images/raspberrypi4-64/*sdimg
